@@ -1,140 +1,78 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import ReactDOM from 'react-dom/client';
 import reportWebVitals from './reportWebVitals';
-import './index.css'
-
+import './index.css';
 
 function XoxGameComponent() {
-    const [games, setGames] = useState([]);
+    const [games, setGames] = useState(Array(9).fill(""));
     const [mark, setMark] = useState("X");
-    const [message, setMessage] = useState("");
+    const [message, setMessage] = useState("Hamle Sırası: X");
     const [isGameFinish, setIsGameFinish] = useState(false);
     const [gameMove, setGameMove] = useState([]);
 
-    useEffect(() => {
-        newGame();
-    }, [newGame])
-
-    const newGame = () => {
-        setGames([
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
-        ]);
+    // `useCallback` ile `newGame` fonksiyonunu sarmalıyoruz.
+    const newGame = useCallback(() => {
+        setGames(Array(9).fill(""));
         setIsGameFinish(false);
         setMark("X");
-        setMessage("Hamle Sırası: " + mark);
-        setGameMove([])
-    }
+        setMessage("Hamle Sırası: X");
+        setGameMove([]);
+    }, []);
+
+    useEffect(() => {
+        newGame();
+    }, [newGame]);
 
     const markGame = (index) => {
-        if (!isGameFinish) {
+        if (!isGameFinish && games[index] === "") {
             const newGames = [...games];
-            if (newGames[index] === "") {
-                newGames[index] = mark;
-                setGames(newGames);
-                setGameMove((val) => [...val, newGames])
-                let e = isMoveFinish(newGames);
-                if (e) {
-                    setMessage("Oyun berabere");
-                    setIsGameFinish(true);
-                    return;
-                }
+            newGames[index] = mark;
+            setGames(newGames);
+            setGameMove((prev) => [...prev, newGames]);
 
-                let r = isGameOver(newGames);
-                if (r) {
-                    setMessage("Oyunu " + mark + " kazandı!");
-                    setIsGameFinish(true);
-                    return;
-                }
-
-                mark == "X" ? setMark("O") : setMark("X");
-                setMessage("Hamle Sırası: " + (mark == "X" ? 'O' : 'X'))
+            if (isMoveFinish(newGames)) {
+                setMessage("Oyun berabere");
+                setIsGameFinish(true);
+                return;
             }
+
+            if (isGameOver(newGames)) {
+                setMessage(`Oyunu ${mark} kazandı!`);
+                setIsGameFinish(true);
+                return;
+            }
+
+            const nextMark = mark === "X" ? "O" : "X";
+            setMark(nextMark);
+            setMessage(`Hamle Sırası: ${nextMark}`);
         }
-    }
+    };
 
     const isGameOver = (newGames) => {
-        if (newGames[0] !== "" &&
-            newGames[0] === newGames[1] &&
-            newGames[1] === newGames[2]) {
-            return true
-        }
+        const winPatterns = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8], // Satırlar
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8], // Sütunlar
+            [0, 4, 8],
+            [2, 4, 6] // Çaprazlar
+        ];
+        return winPatterns.some(([a, b, c]) => newGames[a] !== "" && newGames[a] === newGames[b] && newGames[a] === newGames[c]);
+    };
 
-        if (newGames[3] !== "" &&
-            newGames[3] === newGames[4] &&
-            newGames[4] === newGames[5]) {
-            return true
-        }
-
-        if (newGames[6] !== "" &&
-            newGames[6] === newGames[7] &&
-            newGames[7] === newGames[8]) {
-            return true
-        }
-
-        if (newGames[0] !== "" &&
-            newGames[0] === newGames[3] &&
-            newGames[3] === newGames[6]) {
-            return true
-        }
-
-        if (newGames[1] !== "" &&
-            newGames[1] === newGames[4] &&
-            newGames[4] === newGames[7]) {
-            return true
-        }
-
-        if (newGames[2] !== "" &&
-            newGames[2] === newGames[5] &&
-            newGames[5] === newGames[8]) {
-            return true
-        }
-
-        if (newGames[0] !== "" &&
-            newGames[0] === newGames[4] &&
-            newGames[4] === newGames[8]) {
-            return true
-        }
-
-        if (newGames[2] !== "" &&
-            newGames[2] === newGames[4] &&
-            newGames[4] === newGames[6]) {
-            return true
-        }
-
-        return false;
-    }
-
-    function isMoveFinish(newGames) {
-        for (let i = 0; i < newGames.length; i++) {
-            const element = newGames[i];
-            if (element === "") {
-                return false;
-            }
-        }
-
-        return true;
-    }
+    const isMoveFinish = (newGames) => !newGames.includes("");
 
     const setThatGameMove = (game) => {
-        setGames(game);
-    }
+        setGames([...game]);
+    };
 
     return ( <
-        >
-        <
         div className = 'container text-center' >
         <
         h1 > XOX Oyunu < /h1> <
-        h2 className = 'alert alert-warning' > { message } <
-        /h2> <
+        h2 className = 'alert alert-warning' > { message } < /h2> <
         button onClick = { newGame }
         className = 'btn btn-outline-primary w-100' >
         Yeni Oyun <
@@ -144,8 +82,7 @@ function XoxGameComponent() {
                 div key = { index }
                 className = "col-md-4 box"
                 onClick = {
-                    () => markGame(index)
-                } > { game } <
+                    () => markGame(index) } > { game } <
                 /div>
             ))
         } <
@@ -153,21 +90,17 @@ function XoxGameComponent() {
         hr / > {
             gameMove.map((game, index) => ( <
                 button onClick = {
-                    () => setThatGameMove(game)
-                }
+                    () => setThatGameMove(game) }
                 className = 'btn btn-primary mx-2 mt-2'
-                key = { index } > { index + 1 }.Hamle < /button>
-
+                key = { index } > { index + 1 }.Hamle <
+                /button>
             ))
         } <
-        /div> < /
-        >
-    )
+        /div>
+    );
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render( <
-    XoxGameComponent / >
-);
+root.render( < XoxGameComponent / > );
 
 reportWebVitals();
